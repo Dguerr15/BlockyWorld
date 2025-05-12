@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>Blocky World</title>
+</head>
+<body onload="main()">
+    <h1>Blocky World</h1>
+    
+    <div style="display: flex; align-items: flex-start; gap: 20px;">
+      <div>
+            <canvas id="webgl" width="1000" height="550">
+              Please use a browser that supports "canvas"
+            </canvas>
+            <div id="fpsValue"></div>
+      </div>
+      <div>
+        <p>
+            Animation:
+            <button type="button" id="start">Start</button>
+            <button type="button" id="stop">Stop</button>
+        </p>
+      </div>
+      
+  </div>
+    <!-- Include the WebGL libraries and our script -->
+    <script src="blockyWorld.js"></script>
+    <script src="lib/webgl-utils.js"></script>
+    <script src="lib/webgl-debug.js"></script>
+    <script src="lib/cuon-utils.js"></script>
+    <script src="lib/cuon-matrix-cse160.js"></script>
+    <script src="point.js"></script>
+    <script src="triangle.js"></script>
+    <script src="circle.js"></script>
+    <script src="cube.js"></script>
+    <script src="cylinder.js"></script>
+    <script src="camera.js"></script>
+    
+</body>
+</html>
