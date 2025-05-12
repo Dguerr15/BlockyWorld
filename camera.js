@@ -1,7 +1,7 @@
 class Camera{
     constructor(){
-       this.eye = new Vector3([0, 0, 3]);  
-        this.at = new Vector3([0, 0, -1]);
+        this.eye = new Vector3([3.5, 3.5, -9.5]);  
+        this.at = new Vector3([3.5, 3.2, -8.5]);
         this.up = new Vector3([0, 1, 0]);
         this.fov = 60;
         this.speed = 0.1;
@@ -9,13 +9,13 @@ class Camera{
         this.near = 0.1;
         this.far = 100;
 
-        this.yaw = -90;   // Facing -Z
-        this.pitch = 0;   // Looking straight
-        this.forward = new Vector3([0, 0, -1]);
-        this.right = new Vector3([1, 0, 0]);
+        this.yaw = 90;   // Facing -Z
+        this.pitch = -20;   // Looking straight
+        this.forward = new Vector3([0, -.35, 1]);
+        this.right = new Vector3([-1, 0, 0]);
         this.worldUp = new Vector3([0, 1, 0]);
 
-        this.rotationAngle = 0;
+        this.rotationAngle = 110;
         this.heightDiff = this.at.elements[1] - this.eye.elements[1];
 
         this.updateCameraVectors();
@@ -23,11 +23,7 @@ class Camera{
     }
    // Update matrices after any camera movement
     updateMatrices() {
-        this.viewMatrix.setLookAt(
-            this.eye.elements[0], this.eye.elements[1], this.eye.elements[2],
-            this.at.elements[0], this.at.elements[1], this.at.elements[2],
-            this.up.elements[0], this.up.elements[1], this.up.elements[2]
-        );
+        //
     }
     
     moveForward() {
@@ -101,6 +97,14 @@ class Camera{
     panLeft() {
         this.yaw -= 5;
         this.updateCameraVectors();
+        console.log(this.yaw);
+        console.log(this.pitch);
+        console.log(this.eye);
+        console.log(this.at);
+        console.log(this.up);
+        console.log(this.forward);
+        console.log(this.right);
+        console.log(this.worldUp);
     }
     
     panRight() {

@@ -59,8 +59,11 @@ let g_numMapVertices = 0;
 let g_isMapInitialized = false;
 
 let g_dogObjects ={};
+let g_flowerObject = {};
+let g_birdObjects = {};
 let g_skyObject = null;
 let g_floorObject = null;
+let g_stickObject = null;
 
 // UI
 var g_globalAngleX = 20; // Camera
@@ -139,14 +142,21 @@ function initRenderObjects() {
     g_skyObject = new Cube();
     g_skyObject.textureNum = 1;
     g_skyObject.matrix.scale(20, 20, 20);
-    g_skyObject.matrix.translate(-.5, -0.5, -.5);
+    g_skyObject.matrix.translate(-.5, -0.5, -.8);
 
     g_floorObject = new Cube();
     g_floorObject.textureNum = 0;
-    g_floorObject.matrix.setTranslate(0, -1, 0);
+    g_floorObject.matrix.setTranslate(0, -.75, 0);
     g_floorObject.matrix.scale(16, 0, 16);
-    g_floorObject.matrix.translate(-.5, 0.5, -.5);
+    g_floorObject.matrix.translate(-.5, 0.5, -.8);
     
+    // Create the stick object (new)
+    g_stickObject = new Cube();
+    g_stickObject.matrix.setTranslate(-.2, -.65, -.5);
+    g_stickObject.matrix.rotate(45, 0, 1, 0);
+    g_stickObject.matrix.scale(0.1, 0.1, 0.8);
+    g_stickObject.textureNum = -2; // Solid color
+
     // Create all dog parts once
     g_dogObjects.body = new Cube();
     g_dogObjects.tail = new Cylinder();
@@ -169,6 +179,13 @@ function initRenderObjects() {
     g_dogObjects.rightBU = new Cube();
     g_dogObjects.rightBL = new Cube();
     g_dogObjects.rightBP = new Cube();
+
+    g_flowerObject.stem = new Cube();
+    g_flowerObject.petal1 = new Cube();
+    g_flowerObject.petal2 = new Cube();
+
+    g_birdObjects.left = new Cube();
+    g_birdObjects.right = new Cube();
 }
 
 function keydown(ev) {
@@ -184,6 +201,10 @@ function keydown(ev) {
         g_camera.panLeft();
     } else if (ev.keyCode == 69) { // E key
         g_camera.panRight();
+    } else if (ev.keyCode == 70) { // F key
+        addBlockInFront();
+    } else if (ev.keyCode == 71) { // G key
+        deleteBlockInFront();
     }
 }
 
@@ -318,6 +339,13 @@ function setupMouseHandlers() {
     canvas.onmouseleave = function(ev) {
         g_isDragging = false; // Also stop dragging if mouse leaves canvas
     }
+    canvas.onclick = function(ev) {
+        if (ev.spaceKey) {
+            deleteBlockInFront();
+        } else {
+            addBlockInFront();
+        }
+    };
 
     canvas.onmousemove = function(ev) {
         if (!g_isDragging) return; // Skip processing if not dragging
@@ -624,7 +652,7 @@ var g_map = [
     [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
     [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
     [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+    [1,2,3,2,2,1,1,1,1,1,2,2,3,3,1,1,1,1,2,1,2,3,1,2,3,1,4,4,4,1,1,2]
 ];
 
 function initMap() {
@@ -660,7 +688,7 @@ function initMap() {
                         let modelMatrix = new Matrix4();
                         modelMatrix.setTranslate(0, 0, 0);
                         modelMatrix.scale(.5, .5, .5);
-                        modelMatrix.translate(x-16, h-2, y-16);
+                        modelMatrix.translate(x-16, h-2, y-25.75);
                         
                         // Transform each vertex of the cube and add to mapVertices
                         for (let i = 0, j = 0; i < cube.vert.length; i += 3, j += 2) {
@@ -754,9 +782,21 @@ function renderScene() {
     // Draw floor with color
     g_floorObject.render([0.5, 0.5, 0.5, 1.0]);
 
+    // Draw the stick
+    
+    g_stickObject.render([0.4, 0.2, 0.0, 1.0]);
+
+    createFlower([-1, -.6, -2]);
+    createFlower([1, -.6, -2]);
+    createFlower([-1, -.6, 2]);
+
+    createBird([1, 2.6, 2]);
+    createBird([-3.5, .55, -.45]);
+    createBird([-2, 1.3, -2]);
+
     // Body
     let body = g_dogObjects.body;
-    body.matrix.setTranslate(-0.25, -0.2, -0.05);
+    body.matrix.setTranslate(-.25, -0.2, -0.05);
     body.matrix.rotate(g_body, 1, 0, 0);
     var bodyCoords = new Matrix4(body.matrix);
     body.matrix.scale(0.5, 0.3, 0.65);
@@ -956,3 +996,92 @@ function sendTextToHtml (text, htmlID) {
   }
   htmlElm.innerHTML = "FPS: " + text;
 }
+
+function getBlockCoordsInFront(dist = 1.0) {
+    // Compute point in front of camera
+    const dir = new Vector3(g_camera.forward);
+    dir.normalize();
+    dir.mul(dist);
+    const target = new Vector3(g_camera.eye);
+    target.add(dir);
+
+    // Convert world coordinates to map grid
+    const x = Math.floor(target.elements[0] + 16);
+    const z = Math.floor(target.elements[2] + 16);
+
+    return { x, z };
+}
+
+function addBlockInFront() {
+    const { x, z } = getBlockCoordsInFront();
+
+    if (isNaN(x) || isNaN(z)) return;
+    if (x < 0 || x >= g_map[0].length || z < 0 || z >= g_map.length) return;
+
+    // Limit max stack height
+    if (g_map[z][x] < 6) g_map[z][x] += 1;
+
+    g_isMapInitialized = false; // Rebuild map
+    initMap();
+}
+
+function deleteBlockInFront() {
+    const { x, z } = getBlockCoordsInFront();
+
+     if (isNaN(x) || isNaN(z)) return;
+    if (x < 0 || x >= g_map[0].length || z < 0 || z >= g_map.length) return;
+
+    // Limit min height
+    if (g_map[z][x] > 0) g_map[z][x] -= 1;
+
+    g_isMapInitialized = false;
+    initMap();
+}
+
+// Updated createFlower function
+function createFlower(coords) {
+    // Get the pre-initialized stem object
+    let stem = g_flowerObject.stem;
+    stem.matrix = new Matrix4(); // Reset matrix
+    stem.matrix.translate(coords[0], coords[1], coords[2]);
+    
+    // Save stem coordinates for petals
+    let stemCoords = new Matrix4(stem.matrix);
+    
+    // Scale the stem (thin and tall)
+    stem.matrix.scale(0.05, 0.5, 0.05);
+    stem.render([0.0, 0.5, 0.0, 1.0]); // Green stem
+    
+    // Create first petal (extends in x direction)
+    let petal1 = g_flowerObject.petal1;
+    petal1.matrix = new Matrix4(stemCoords);
+    petal1.matrix.translate(-0.2, 0.5, 0); // Move to top of stem
+    petal1.matrix.scale(0.4, 0.05, 0.05);
+    petal1.render([1.0, 0.0, 0.0, 1.0]); // Red petal
+    
+    // Create second petal (extends in z direction)
+    let petal2 = g_flowerObject.petal2;
+    petal2.matrix = new Matrix4(stemCoords);
+    petal2.matrix.translate(0, 0.5, .2); // Move to top of stem
+    petal2.matrix.rotate(90, 0, 1, 0); // Rotate 90 degrees around y-axis
+    petal2.matrix.scale(0.4, 0.05, 0.05);
+    petal2.render([1.0, 0.0, 0.0, 1.0]); // Red petal
+}
+
+function createBird(coords) {
+    let left = g_birdObjects.left;
+    left.matrix = new Matrix4(); // Reset with identity matrix
+    left.matrix.translate(coords[0], coords[1], coords[2]);
+    
+    let leftCoords = new Matrix4(left.matrix);
+    left.matrix.rotate(45, 0, 0, 1);
+    left.matrix.scale(0.15, 0.3, 0.15);
+    left.render([0.0, 0.0, 0.0, 1.0]); 
+    
+    let right = g_birdObjects.right;
+    right.matrix = new Matrix4(leftCoords);
+    right.matrix.rotate(-45, 0, 0, 1); 
+    right.matrix.scale(0.15, 0.45, 0.15);
+    right.render([0.0, 0.0, 0.0, 1.0]);
+}
+
